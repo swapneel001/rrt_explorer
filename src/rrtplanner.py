@@ -34,7 +34,7 @@ class RRTPlanner:
 
 
 if __name__=='__main__':
-    rospy.init_node("mapreader")
+    rospy.init_node("rrtplanner")
     planner = RRTPlanner()
 
 
