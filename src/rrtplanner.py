@@ -14,7 +14,6 @@ class RRTPlanner:
     def __init__(self):
         self.nodes = np.array([[10,10]])
         self.path = np.array([])
-        self.path = np.append(self.nodes,np.array([0,0]))
         self.subscriber = rospy.Subscriber("/map",OccupancyGrid,self.callback,queue_size=1)
         self.rate = rospy.Rate(5)
         rospy.spin()
@@ -46,7 +45,7 @@ class RRTPlanner:
     def addNode(self):        
         flag = False
         i=0
-        while (flag!=True):
+        while(flag!=True):
             x = random.randint(0,499)
             y = random.randint(0,499)
             checkdist = self.distance((x,y),(int(self.nodes[-1][0]),int(self.nodes[-1][1])))
@@ -79,15 +78,14 @@ class RRTPlanner:
         pass
 
     def nearestNode(self,nodenumber):
-        flag = False
-        min = 500
-        for i in range(len(self.nodes)-1):
-            dist = self.distance(self.nodes[nodenumber],self.nodes[i])
-            nearestNode = i
-            if (dist<min) and (dist>0):
-                min = dist
-                nearestNode = i
-        return nearestNode
+        dlist = []
+        for i in range(len(self.nodes)):
+            if i == nodenumber:
+                continue
+            dlist.append((self.nodes[nodenumber][0]-self.nodes[i][0])**2 + (self.nodes[nodenumber][1]-self.nodes[i][1])**2)
+        minimum = dlist.index(min(dlist))
+        print("nearest node to node number",nodenumber,"is",minimum)
+        return minimum
         pass
     def bias(self):
         print("biased")
@@ -109,11 +107,16 @@ class RRTPlanner:
     def drawPath(self):
         i = 0
         n = 0
-        while(n<len(self.nodes)):
+        while(i<len(self.nodes)):
             n = self.nearestNode(i)
+            print("Number of nodes:",len(self.nodes))
             print("printing path")
+            print("current node ",i)
+            print("closest node",n)
             cv2.line(self.mapimage,(int(self.nodes[i][0]),int(self.nodes[i][1])),(int(self.nodes[n][0]),int(self.nodes[n][1])),(255,0,0),1)
             i = n
+            if i == (len(self.nodes)-2):
+                break
         
             
         print("path printed")
