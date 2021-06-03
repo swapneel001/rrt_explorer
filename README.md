@@ -15,3 +15,7 @@
   Output: An openCV image with a path drawn between appropriate nodes. 
   
   Current Status: The planner is not 100% accurate, some collisions are not detected.
+
+  ## Example:
+  
+  ![alt text](https://github.com/swapneel001/rrt_explorer/blob/master/example%20of%20RRT%20Planner.png)
