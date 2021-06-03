@@ -40,6 +40,7 @@ class RRT:
         self.expand_dis = expand_dis
         self.goal_sample_rate = goal_sample_rate
         
+        self.stepLength = 50
         self.path_resolution = 1
         self.obstaclelist = []
         self.node_list = []
@@ -59,23 +60,23 @@ class RRT:
             print(rnd_node.x,rnd_node.y)
             nearest_ind = self.get_nearest_node_index(self.node_list, rnd_node)
             nearest_node = self.node_list[nearest_ind]
-
+            distance, _ = self.calc_distance_and_angle(rnd_node,nearest_node)
+            if distance > self.stepLength:
+                continue
             new_node = self.addPath(nearest_node, rnd_node)
             print("Collision Status", self.check_collision(new_node,self.obstaclelist))
-            if self.check_collision(new_node,self.obstaclelist):
-                
+            if not self.check_collision(new_node,self.obstaclelist):    
                 print("Appending to node")
                 self.node_list.append(new_node)
 
 
             cv2.circle(self.mapimage,(new_node.x,new_node.y),1,(255,0,0),-1)
-            print("distance to goal",self.calc_dist_to_goal(self.node_list[-1].x,
-                                      self.node_list[-1].y))
+            #print("distance to goal",self.calc_dist_to_goal(self.node_list[-1].x,self.node_list[-1].y))
             if self.calc_dist_to_goal(self.node_list[-1].x,
                                       self.node_list[-1].y) <= self.expand_dis:
                 print("Final node added")
                 final_node = self.addPath(self.node_list[-1], self.end)
-                if self.check_collision(final_node, self.obstaclelist):
+                if not self.check_collision(final_node, self.obstaclelist):
                     flag = True
                     return self.generate_final_course(len(self.node_list) - 1)
     
@@ -153,20 +154,32 @@ class RRT:
 
 
     def check_collision(self,node, obstacleList):
+        """
+        Check for collision with objects, False = no collision, True = collision 
+        """
         if (node is None):
-            return False
+            return True
 
         for i in range(len(node.path_x)):
-            if (node.path_x[i],node.path_y[i])in obstacleList:
-                return False
-        for i in range(len(node.path_x)):
+            if self.map[node.path_x[i]+self.mapwidth*node.path_y[i]]:
+                return True
             for j in range(5):
-                if(node.path_x[i]+j,node.path_y[i]+j) in obstacleList:
-                    return False
-                elif (node.path_x[i]-j,node.path_y[i]-j) in obstacleList:
-                    return False
+            #check neighbouring
+                if self.map[node.path_x[i]+self.mapwidth*node.path_y[i]+j]:
+                    return True
+                if self.map[node.path_x[i]+self.mapwidth*node.path_y[i]-j]:
+                    return True
+        # for i in range(len(node.path_x)):
+        #     if (node.path_x[i],node.path_y[i])in obstacleList:
+        #         return True
+        # for i in range(len(node.path_x)):
+        #     for j in range(5):
+        #         if(node.path_x[i]+j,node.path_y[i]+j) in obstacleList:
+        #             return True
+        #         elif (node.path_x[i]-j,node.path_y[i]-j) in obstacleList:
+        #             return True
 
-        return True  # safe
+        return False  # safe
 
 
     @staticmethod
@@ -191,10 +204,12 @@ class RRT:
         rospy.loginfo("map read")
         rospy.loginfo(data.info.width)
         rospy.loginfo(data.info.height)
+        self.mapwidth = data.info.width
+        self.mapheight = data.info.height
         #print(len(data.data))
-        self.mapdata = np.array(data.data)
-        print(self.mapdata.dtype)
-        self.mapdata = np.reshape(self.mapdata,(-1,500))
+        self.map = np.array(data.data)
+        print(self.map.dtype)
+        self.mapdata = np.reshape(self.map,(-1,500))
         print("map shape", self.mapdata.shape)
         self.mapimage = self.mapdata.astype(np.uint8)
         self.mapimage = np.where(self.mapimage == 100,255,self.mapimage)
